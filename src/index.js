@@ -1,23 +1,40 @@
 import './css/styles.css';
-
-const countryDetails = document.querySelector('.country-info');
+import { fetchCountries } from './js-parts/api-requests';
 
 const DEBOUNCE_DELAY = 300;
 
-fetch('https://restcountries.com/v3.1/name/eesti')
-  .then(response => {
-    return response.json();
-  })
-  .then(countryArr => {
-    return countryArr[0];
-  })
-  .then(countryCardRender)
-  .catch(error => console.log(error));
+const countryDetails = document.querySelector('.country-info');
+const searchInput = document.querySelector('#search-box');
+const countryList = document.querySelector('.country-list');
 
-function countryCardRender (countryObj) {
+searchInput.addEventListener('input', onInputSearch);
+
+function onInputSearch(e) {
+  const inputText = e.currentTarget.value.trim();
+  if (!inputText) {
+    clearRenderField();
+    return;
+  }
+  fetchCountries(inputText)
+    .then(countryArr => {
+      if (countryArr.length > 1 && countryArr.length <= 5) {
+        console.log(countryArr);
+        renderSmallCountryList(countryArr);
+      } else if (countryArr.length === 1) {
+        countryCardRender(countryArr[0]);
+      } else {
+        console.log('too many');
+      }
+    })
+    .catch(error => console.log(error));
+}
+
+function countryCardRender(countryObj) {
   const { flags, name, capital, population, languages } = countryObj;
-
-  const markup = `<img src="${flags.png}" alt="" class="country-flag" width="50">
+  clearRenderField();
+  const markup = `<img src="${
+    flags.png
+  }" alt="" class="country-flag" width="50">
     <h1 class="country-name">${name.official}</h1>
      <div class="country-details">
      <p class="capital">Capital:<span class="country-details__text"> ${Object.values(
@@ -28,6 +45,22 @@ function countryCardRender (countryObj) {
        languages
      )}</span></p>
    </div>`;
-   countryDetails.insertAdjacentHTML('afterbegin', markup);
-  };
+  countryDetails.insertAdjacentHTML('afterbegin', markup);
+}
 
+function renderSmallCountryList(countriesArr) {
+  clearRenderField();
+  const markup = countriesArr
+    .map(country => {
+      const { flags, name } = country;
+      return `<div class="country"><img src="${flags.png}" alt="" class="country-flag" width="30">
+      <h1 class="country-name listed">${name.official}</h1></div>`;
+    })
+    .join('');
+  countryList.insertAdjacentHTML('afterbegin', markup);
+}
+
+function clearRenderField() {
+  countryList.innerHTML = '';
+  countryDetails.innerHTML = '';
+}
